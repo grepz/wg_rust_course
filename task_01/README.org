@@ -1,0 +1,4 @@
+* HOWTO run
+#+BEGIN_SRC sh
+cargo run -- --csv coordinates.csv --from 1657554163 --to 1657554317
+#+END_SRC
