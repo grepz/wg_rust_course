@@ -11,7 +11,7 @@ const DEFAULT_CSV: &str = "coordinates.csv";
 type Record = (f64, f64, u64);
 
 fn radians(rec: &Record) -> (f64, f64) {
-    (rec.0 * std::f64::consts::PI/180.0, rec.1 * std::f64::consts::PI/180.0)
+    (rec.0.to_radians(), rec.1.to_radians())
 }
 
 fn haversine_distance(start: &Record, end: &Record) -> f64 {
@@ -38,7 +38,7 @@ impl Coordinates {
 
     fn new() -> Coordinates {
         Coordinates {
-            coordinates: Vec::new(),
+            coordinates: Vec::with_capacity(1024),
         }
     }
 
