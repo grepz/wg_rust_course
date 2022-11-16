@@ -11,6 +11,12 @@ pub struct Cache<'a> {
     ttl: BTreeMap<Instant, HashSet<&'a str>>,
 }
 
+impl Default for Cache<'static> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Cache<'static> {
     pub fn new() -> Self {
         Self {
