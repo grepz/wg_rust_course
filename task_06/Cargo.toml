@@ -6,3 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+rand = "0.8.4"
+bencher = "0.1.5"
+
+[[bench]]
+name = "cache_expire"
+harness = false

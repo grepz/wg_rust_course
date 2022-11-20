@@ -1,153 +1,27 @@
-use std::{
-    collections::{HashMap, BTreeMap, HashSet},
-    collections::hash_map::Entry as HashMapEntry,
-    collections::btree_map::Entry as BTreeMapEntry,
-    time::{Duration, Instant},
-};
+use task_06::grepz_cache;
 
-#[derive(Debug)]
-pub struct Cache<'a> {
-    map: HashMap<&'a str, (&'a usize, Instant)>,
-    ttl: BTreeMap<Instant, HashSet<&'a str>>,
-}
+use std::time::Duration;
 
-impl Default for Cache<'static> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+// #[bench]
+// fn bench_large_ivankin_expire(b: &mut Bencher) {
+//     let mut rng = rand::thread_rng();
+//     let mut numbers_vec: Vec<(String, Box<usize>, Duration)> =
+//         Vec::with_capacity(BENCH_LARGE_SZ);
+//     for n in 0..BENCH_LARGE_SZ {
+//         numbers_vec.push(
+//             (n.to_string(),
+//              Box::new(n),
+//              Duration::from_secs(rng.gen_range(1..10))))
+//     }
 
-impl Cache<'static> {
-    pub fn new() -> Self {
-        Self {
-            ttl: BTreeMap::new(),
-            map: HashMap::new()
-        }
-    }
-}
-
-impl<'a> Cache<'a> {
-    pub fn len(&self) -> usize {
-        self.map.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.map.is_empty()
-    }
-}
-
-impl<'a> Cache<'a> {
-
-    pub fn insert(&mut self, key: &'a str, bs: &'a usize, ttl: Duration) ->
-        Option<(&'a usize, Instant)>
-    {
-        let tstamp = Instant::now() + ttl;
-        let (old, new) =
-            match self.map.entry(key) {
-                HashMapEntry::Occupied(mut oe) => {
-                    let (old_bs, old_tstamp) = oe.insert((bs, tstamp));
-                    self.ttl.entry(old_tstamp)
-                        .and_modify(|hs| {
-                            hs.remove(key);
-                        });
-                    (Some((old_bs, old_tstamp)), (bs, tstamp))
-                },
-                HashMapEntry::Vacant(_ve) => {
-                    self.map.insert(key, (bs, tstamp));
-                    (None, (bs, tstamp))
-                }
-            };
-
-        let _ttl_result =
-            self.ttl
-            .entry(tstamp)
-            .and_modify(|hs| {
-                hs.insert(key);
-            })
-            .or_insert_with(|| {
-                let mut hs = HashSet::new();
-                hs.insert(key);
-                hs
-            });
-        match old {
-            Some((_, old_tstamp)) => {
-                match self.ttl.entry(old_tstamp) {
-                    BTreeMapEntry::Occupied(
-                        mut oe
-                    ) => {
-                        let w = oe.get_mut();
-                        if w.is_empty() {
-                            oe.remove_entry();
-                        }
-                    },
-                    BTreeMapEntry::Vacant(_ve) => (),
-                }
-            },
-            None => {}
-        }
-        Some(new)
-    }
-
-
-    pub fn remove(&mut self, key: &'a str) ->
-        Option<(&'a usize, Instant)>
-    {
-        match self.map.remove(key) {
-            Some((sz, inst)) => {
-                self.ttl
-                    .entry(inst)
-                    .and_modify(|hs| {
-                        hs.remove(key);
-                    });
-                match self.ttl.entry(inst) {
-                    BTreeMapEntry::Occupied(mut oe) => {
-                        let w = oe.get_mut();
-                        if w.is_empty() {
-                            oe.remove_entry();
-                        }
-                    },
-                    BTreeMapEntry::Vacant(_ve) => (),
-                }
-                Some((sz, inst))
-            },
-            None => None
-        }
-    }
-
-    pub fn get(&'a self, key: &'a str) ->
-        Option<(&'a usize, Instant)>
-    {
-        let result = self.map
-            .get(key);
-        Some(*result.unwrap())
-    }
-
-    pub fn expire(&mut self) {
-        let current_tstamp = Instant::now();
-        let mut expired: BTreeMap<Instant, HashSet<&'a str>> = BTreeMap::new();
-        let mut active: BTreeMap<Instant, HashSet<&'a str>> = BTreeMap::new();
-        (expired, active) =
-            self.ttl.iter_mut()
-            .fold((expired, active),
-                  |
-                  (mut e, mut a),
-                  (item_tstamp, hash_str)
-                  | {
-                      if *item_tstamp <= current_tstamp {
-                          e.insert(*item_tstamp, hash_str.clone());
-                      } else {
-                          a.insert(*item_tstamp, hash_str.clone());
-                      }
-                      (e, a)
-                  });
-
-        expired
-            .iter()
-            .for_each(|(_, hs)| {hs.iter().for_each(|s| {self.remove(s);})});
-
-        self.ttl = active;
-    }
-}
+//     b.iter(|| {
+//         let mut cache = Cache::new();
+//         numbers_vec.iter().for_each(|item| {
+//             cache.insert(&item.0, &item.1, item.2);
+//         });
+//         cache.expire();
+//     })
+// }
 
 fn main() {
     let data = vec![
@@ -164,7 +38,7 @@ fn main() {
         (String::from("twenty"), Box::new(20), Duration::from_millis(1510))
     ];
 
-    let mut cache = Cache::new();
+    let mut cache = grepz_cache::Cache::new();
     data.iter().for_each(|item| {
         cache.insert(&item.0, &item.1, item.2);
     });
