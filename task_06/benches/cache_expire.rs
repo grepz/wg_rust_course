@@ -8,7 +8,7 @@ use bencher::Bencher;
 use rand::Rng;
 use std::time::Duration;
 
-static BENCH_LARGE_SZ: usize = 1000000;
+static BENCH_LARGE_SZ: usize = 100000;
 static BENCH_SMALL_SZ: usize = 256;
 
 fn grepz_expire_large(bench: &mut Bencher) {
